@@ -1,4 +1,4 @@
-package user_client
+package api_client
 
 type ClientConfig struct {
 	UserServiceHost string
