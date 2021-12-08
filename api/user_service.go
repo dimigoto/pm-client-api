@@ -31,15 +31,13 @@ type User struct {
 	ArchivedAt   null.Time   `json:"archived_at"`
 }
 
-type Users []User
-
-func usersFromResponse(r *http.Response) (*Users, error) {
+func usersFromResponse(r *http.Response) ([]User, error) {
 	responseBody, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	var users *Users
+	var users []User
 
 	err = json.Unmarshal(responseBody, &users)
 	if err != nil {
@@ -61,7 +59,7 @@ func NewUserService(client *http.Client, host string) *UserService {
 	}
 }
 
-func (s *UserService) GetAllByIDs(ids []string) (*Users, error) {
+func (s *UserService) GetAllByIDs(ids []string) ([]User, error) {
 	type getUsersByIDsRequest struct {
 		ID []string `json:"id"`
 	}
