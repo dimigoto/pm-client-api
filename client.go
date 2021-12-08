@@ -3,7 +3,7 @@ package api_client
 import (
 	"net/http"
 
-	"pm-client-api/api"
+	"github.com/dimigoto/pm-client-api/api"
 )
 
 type ApiClient struct {
