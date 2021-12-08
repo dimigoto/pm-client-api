@@ -1,4 +1,4 @@
-module github.com/dimigoto/pm-client-user
+module pm-client-api
 
 go 1.16
 

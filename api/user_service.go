@@ -1,13 +1,17 @@
-package user_client
+package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"time"
 
 	"gopkg.in/guregu/null.v4"
+)
+
+const (
+	endpointGetAllUsersByIds = "/users"
 )
 
 // User Структура пользователя
@@ -27,13 +31,15 @@ type User struct {
 	ArchivedAt   null.Time   `json:"archived_at"`
 }
 
-func UsersFromResponse(r *http.Response) ([]User, error) {
+type Users []User
+
+func usersFromResponse(r *http.Response) (*Users, error) {
 	responseBody, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	var users []User
+	var users *Users
 
 	err = json.Unmarshal(responseBody, &users)
 	if err != nil {
@@ -43,50 +49,46 @@ func UsersFromResponse(r *http.Response) ([]User, error) {
 	return users, nil
 }
 
-type ResponseError struct {
-	ErrorMessage string `json:"error"`
+type UserService struct {
+	client *http.Client
+	host string
 }
 
-func (e *ResponseError) Error() string {
-	return e.ErrorMessage
+func NewUserService(client *http.Client, host string) *UserService {
+	return &UserService{
+		client: client,
+		host: host,
+	}
 }
 
-func ResponseErrorFromResponse(r *http.Response) (*ResponseError, error) {
-	responseBody, err := io.ReadAll(r.Body)
+func (s *UserService) GetAllByIDs(ids []string) (*Users, error) {
+	type getUsersByIDsRequest struct {
+		ID []string `json:"id"`
+	}
+
+	request, err := createRequest(
+		http.MethodPost,
+		prepareURL("http", s.host, endpointGetAllUsersByIds),
+		getUsersByIDsRequest{ID: ids},
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	var responseError = ResponseError{}
-
-	err = json.Unmarshal(responseBody, &responseError)
+	response, err := s.client.Do(request)
 	if err != nil {
 		return nil, err
 	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Println(err)
+		}
+	}(response.Body)
 
-	return &responseError, nil
-}
-
-type ValidationErrors struct {
-	Errors map[string] interface{} `json:"errors"`
-}
-
-func (e *ValidationErrors) Error() string {
-	return fmt.Sprint(e.Errors)
-}
-
-func ValidationErrorsFromResponse(r *http.Response) (*ValidationErrors, error) {
-	responseBody, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
+	if response.StatusCode == http.StatusOK {
+		return usersFromResponse(response)
 	}
 
-	var validationErrors = ValidationErrors{}
-
-	err = json.Unmarshal(responseBody, &validationErrors)
-	if err != nil {
-		return nil, err
-	}
-
-	return &validationErrors, nil
+	return nil, parseError(response)
 }
