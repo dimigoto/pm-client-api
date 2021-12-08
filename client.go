@@ -10,6 +10,7 @@ type ApiClient struct {
 	client *http.Client
 	config *ClientConfig
 	userService *api.UserService
+	channelService *api.ChannelService
 }
 
 func NewApiClient(config *ClientConfig) *ApiClient {
@@ -25,4 +26,12 @@ func (c* ApiClient) UserService() *api.UserService {
 	}
 
 	return c.userService
+}
+
+func (c *ApiClient) ChannelService() *api.ChannelService {
+	if c.channelService == nil {
+		c.channelService = api.NewChannelService(c.client, c.config.ChannelServiceHost)
+	}
+
+	return c.channelService
 }
